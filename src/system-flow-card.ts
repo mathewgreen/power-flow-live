@@ -293,12 +293,11 @@ export class SystemFlowCard extends LitElement {
               <div class="spacer container-right"></div>
               ${elementsByPosition.right.map(element => this.elementToHtml(element))}
               <div class="spacer container-right"></div>
-            </div>
             <div class="lines">
               ${objectMap(lineCalcs, (pos, posLineCalcs) => html`
                 <svg xmlns="http://www.w3.org/2000/svg" style="${svgBoxStylesByPosition[pos]}" viewBox="0 0 100 100" preserveAspectRatio="none">
                   ${posLineCalcs.map(posLineCalc => svg`
-                    <path d="${posLineCalc.path}" stroke="${this.getElementColor(posLineCalc.element)}" vector-effect="non-scaling-size" style="opacity: ${!posLineCalc.element.calculations.systemTotal && this._config?.fadeIdylElements ? .25 : 1};"></path>
+                    <path d="${posLineCalc.path}" stroke="${this.getElementColor(posLineCalc.element)}" vector-effect="non-scaling-stroke" style="opacity: ${!posLineCalc.element.calculations.systemTotal && this._config?.fadeIdylElements ? .25 : 1};"></path>
                     ${this.displayValue(posLineCalc.element.calculations.systemTotal) && html`
                         <svg xmlns="http://www.w3.org/2000/svg" style="${svgBoxStylesByPosition[pos]}" viewBox="0 0 100 100" preserveAspectRatio="none" id="${posLineCalc.flowId}">
                           ${svg`<circle r="1" vector-effect="non-scaling-stroke" style="stroke-width: 4; stroke: ${this.getElementColor(posLineCalc.element)}; fill: ${this.getElementColor(posLineCalc.element)};">

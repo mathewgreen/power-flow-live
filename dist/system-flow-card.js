@@ -108,12 +108,11 @@ return function(t){return!isNaN(parseFloat(t))&&!isNaN(Number(t))}(t)?Number(t):
               <div class="spacer container-right"></div>
               ${h.right.map((t=>this.elementToHtml(t)))}
               <div class="spacer container-right"></div>
-            </div>
             <div class="lines">
               ${f=v,g=(t,e)=>V`
                 <svg xmlns="http://www.w3.org/2000/svg" style="${u[t]}" viewBox="0 0 100 100" preserveAspectRatio="none">
                   ${e.map((e=>{var i;return L`
-                    <path d="${e.path}" stroke="${this.getElementColor(e.element)}" vector-effect="non-scaling-size" style="opacity: ${!e.element.calculations.systemTotal&&(null===(i=this._config)||void 0===i?void 0:i.fadeIdylElements)?.25:1};"></path>
+                    <path d="${e.path}" stroke="${this.getElementColor(e.element)}" vector-effect="non-scaling-stroke" style="opacity: ${!e.element.calculations.systemTotal&&(null===(i=this._config)||void 0===i?void 0:i.fadeIdylElements)?.25:1};"></path>
                     ${this.displayValue(e.element.calculations.systemTotal)&&V`
                         <svg xmlns="http://www.w3.org/2000/svg" style="${u[t]}" viewBox="0 0 100 100" preserveAspectRatio="none" id="${e.flowId}">
                           ${L`<circle r="1" vector-effect="non-scaling-stroke" style="stroke-width: 4; stroke: ${this.getElementColor(e.element)}; fill: ${this.getElementColor(e.element)};">
