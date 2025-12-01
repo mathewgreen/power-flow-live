@@ -337,21 +337,20 @@ export class SystemFlowCard extends LitElement {
       border: 2px solid;
       overflow: hidden;
       
-      /* --- LAYOUT FIXES --- */
       display: flex;
       flex-direction: column;
-      /* space-between pushes the first item to the top and last to the bottom */
-      justify-content: space-between; 
-      /* padding prevents the text from touching the very edge of the border */
-      padding: 4px 0; 
-      /* box-sizing ensures padding doesn't make the circle bigger than 80px */
+      justify-content: space-between;
+      padding: 4px 0;
       box-sizing: border-box;
-      /* -------------------- */
       
       align-items: center;
       text-align: center;
-      font-size: 14px;
-      line-height: 14px;
+      
+      /* --- FONT ADJUSTMENTS --- */
+      font-size: 12px; /* Reduced from 14px to fit emojis + text */
+      line-height: 1.2; /* slightly loose to accommodate emoji height */
+      /* ------------------------ */
+      
       position: relative;
       text-decoration: none;
       color: var(--primary-text-color);
