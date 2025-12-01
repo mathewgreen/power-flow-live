@@ -11,29 +11,22 @@ import {
 import { logError } from "./logging.js";
 import { CalculatedElementDef } from "./type.js";
 
+// DEBUG: Version Logger to verify file load
+const VERSION = "2.1-FIXED";
+console.info(`%c SYSTEM-FLOW-CARD ${VERSION} IS LOADED `, 'background: #4caf50; color: #fff; font-weight: bold;');
+
 @customElement("system-flow-card")
 export class SystemFlowCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config = {} as SystemFlowCardConfig;
 
   setConfig(config: SystemFlowCardConfig): void {
-    if (
-      !config.elements ||
-      (!config.elements.length)
-    ) {
-      throw new Error(
-        "At least one entity must be defined"
-      );
+    if (!config.elements || (!config.elements.length)) {
+      throw new Error("At least one entity must be defined");
     }
     ['top', 'bottom'].forEach(position => {
-      if (
-        config.elements
-          .filter(element => element.position === position)
-          .length > 2
-      ) {
-        throw new Error(
-          `Maximum 2 elements allowed in ${position} row.`
-        );
+      if (config.elements.filter(element => element.position === position).length > 2) {
+        throw new Error(`Maximum 2 elements allowed in ${position} row.`);
       }
     })
     this._config = {
@@ -49,12 +42,9 @@ export class SystemFlowCard extends LitElement {
   private getEntity = (entityId: string | undefined | null):  HassEntity | undefined => {
     const entity = entityId ? this.hass.states[entityId] : undefined;
     if (!entity || !entity.state) {
-      logError(
-        `entity "${entityId ?? "Unknown"}" is not available or misconfigured`
-      );
+      logError(`entity "${entityId ?? "Unknown"}" is not available or misconfigured`);
       return undefined;
     }
-
     return entity;
   }
 
@@ -71,22 +61,14 @@ export class SystemFlowCard extends LitElement {
     this.getEntity(this.getElementEntityId(element))
 
   private getElementIconId = (element: CalculatedElementDef): string => {
-    if(element.icon) {
-      return element.icon
-    }
-
+    if(element.icon) return element.icon;
     const entity = this.getElementEntity(element);
-
-    if (!entity)
-      return 'mdi:eye';
-
+    if (!entity) return 'mdi:eye';
     return entity ? stateIcon(entity) : 'mdi:eye';
   }
 
   private getElementColor = (element: CalculatedElementDef): string => {
-    if(!element.color) {
-      return 'var(--primary-text-color)';
-    }
+    if(!element.color) return 'var(--primary-text-color)';
     return element.color;
   }
 
@@ -95,77 +77,45 @@ export class SystemFlowCard extends LitElement {
 
   private getEntityUnit = (ent: HassEntity | string | undefined) => {
     const entity = typeof ent === 'string' ? this.getEntity(ent) : ent;
-
-    if(!entity)
-      return undefined
-
-    return entity.attributes.unit_of_measurement
+    if(!entity) return undefined;
+    return entity.attributes.unit_of_measurement;
   }
 
   private displayValue = (value, abs: boolean = false, unit: string | null = null, places: number | boolean = false): number | string | undefined => {
     let newValue: string | number = value;
-    if(abs) {
-      newValue = Math.abs(coerceNumber(newValue))
-    }
-    if(typeof newValue === 'number' && typeof places === 'number') {
-      newValue = round(newValue, places)
-    }
-    if(unit) {
-      newValue = `${newValue} ${unit}`;
-    }
+    if(abs) newValue = Math.abs(coerceNumber(newValue));
+    if(typeof newValue === 'number' && typeof places === 'number') newValue = round(newValue, places);
+    if(unit) newValue = `${newValue} ${unit}`;
     return newValue;
   }    
 
   private getEntityValue = (ent: HassEntity | string | undefined, abs: boolean = false, showUnit: boolean = false, places: number | boolean = false): number | string | undefined => {
     const entity = typeof ent === 'string' ? this.getEntity(ent) : ent;
-    if(!entity)
-      return undefined
-
+    if(!entity) return undefined;
     const value = entity?.state;
     const unit = showUnit ? this.getEntityUnit(entity) : null;
-
-    return this.displayValue(value, abs, unit, places)
+    return this.displayValue(value, abs, unit, places);
   }
 
   private elementArrows = (value: number, position: string, fill: string | null = null) => {
-    if (!value) {
-      return null;
-    }
-    
+    if (!value) return null;
     let direction: string;
     switch (true) {
-      case (
-        position === 'top' && value > 0 ||
-        position === 'bottom' && value < 0 
-      ) : direction = 'down'; break;
-      case (
-        position === 'top' && value < 0 ||
-        position === 'bottom' && value > 0 
-      ) : direction = 'up'; break;
-      case (
-        position === 'left' && value > 0 ||
-        position === 'right' && value < 0 
-      ) : direction = 'right'; break;
-      case (
-        position === 'left' && value < 0 ||
-        position === 'right' && value > 0 
-      ) : direction = 'left'; break;
-      default:
-        direction = ''
+      case (position === 'top' && value > 0 || position === 'bottom' && value < 0): direction = 'down'; break;
+      case (position === 'top' && value < 0 || position === 'bottom' && value > 0): direction = 'up'; break;
+      case (position === 'left' && value > 0 || position === 'right' && value < 0): direction = 'right'; break;
+      case (position === 'left' && value < 0 || position === 'right' && value > 0): direction = 'left'; break;
+      default: direction = '';
     }
-
-    return html`
-      <ha-icon style="fill: ${fill}" class="small" icon="mdi:arrow-${direction}"></ha-icon>
-    `
+    return html`<ha-icon style="fill: ${fill}; display: inline-block;" class="small" icon="mdi:arrow-${direction}"></ha-icon>`;
   }
 
-  // class="battery-${element.calculations.systemTotal > 0 ? 'out' : 'in'}"
   private elementValueArrows = (element: CalculatedElementDef) => html`
-    <div style="height: 12px;">
+    <div class="value-row">
       ${element.calculations.systemTotal
         ? html`
           ${!['left', 'middle'].includes(element.position) ? this.elementArrows(element.calculations.systemTotal, element.position, this.getElementColor(element)) : null}
-          ${this.displayValue(element.calculations.systemTotal, element.position !== 'middle', this.getElementUnit(element), 0)}
+          <span style="white-space: nowrap;">${this.displayValue(element.calculations.systemTotal, element.position !== 'middle', this.getElementUnit(element), 0)}</span>
           ${element.position === 'left' ? this.elementArrows(element.calculations.systemTotal, element.position, this.getElementColor(element)) : null}
         ` : null
       }
@@ -185,17 +135,23 @@ export class SystemFlowCard extends LitElement {
             opacity: .25;
           "></div>`
         ) : null}
+        
+        ${/* TOP SECTION */ ''}
         ${element.position === 'bottom'
           ? this.elementValueArrows(element)
-          : html`<div style="height: 12px;">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
+          : html`<div class="value-row">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
         }
-        <div style="width: 100%; display: flex">
+
+        ${/* MIDDLE SECTION */ ''}
+        <div class="icon-row">
           <span class="side-extra">${element.extra?.left ? this.getEntityValue(element.extra?.left, false, true) : ' '}</span>
-          <ha-icon style="width: 24px; fill: ${this.getElementColor(element)}" icon="${this.getElementIconId(element)}"></ha-icon>
+          <ha-icon style="width: 24px; height: 24px; fill: ${this.getElementColor(element)}" icon="${this.getElementIconId(element)}"></ha-icon>
           <span class="side-extra">${element.extra?.right ? this.getEntityValue(element.extra?.right, false, true) : ' '}</span>
         </div>
+
+        ${/* BOTTOM SECTION */ ''}
         ${element.position === 'bottom'
-          ? html`<div style="height: 12px;">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
+          ? html`<div class="value-row">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
           : this.elementValueArrows(element)
         }
       </div>
@@ -203,71 +159,37 @@ export class SystemFlowCard extends LitElement {
   `
 
   protected render(): TemplateResult {
-    if (!this._config || !this.hass) {
-      return html``;
-    }
+    if (!this._config || !this.hass) return html``;
 
     const { elements: configElements } = this._config;
-    
     let systemPower = 0;
     const elements = configElements.map((element) : CalculatedElementDef => {
       let toSystem = 0;
       let fromSystem: number | null = null;
       let systemTotal = 0;
-
       const multiplier = element.invert ? -1 : 1;
-
       toSystem = typeof element.value === "string"
         ? coerceNumber(this.getEntityValue(element.value)) * multiplier
         : coerceNumber(this.getEntityValue(element.value.toSystem))
-
       if (typeof element.value !== "string" && element.value.fromSystem) {
         fromSystem = coerceNumber(this.getEntityValue(element.value.fromSystem));
       }
       systemTotal = toSystem - (fromSystem ?? 0)
-      
-      if(!element.exclude) {
-        systemPower -= systemTotal;
-      }
-      
-      const extra = typeof element.extra === "string" ? {
-        main: element.extra,
-      } : element.extra
-
-      return {
-        ...element,
-        extra,
-        calculations: {
-          toSystem,
-          fromSystem,
-          systemTotal
-        }
-      }
+      if(!element.exclude) systemPower -= systemTotal;
+      const extra = typeof element.extra === "string" ? { main: element.extra } : element.extra
+      return { ...element, extra, calculations: { toSystem, fromSystem, systemTotal } }
     });
     
-    const extra = typeof this._config.system?.extra === "string" ? {
-      main: this._config.system?.extra,
-    } : this._config.system?.extra
-
+    const extra = typeof this._config.system?.extra === "string" ? { main: this._config.system?.extra } : this._config.system?.extra
     elements.push({
       value: 'system',
-      ...(this._config.system?.unit ? {
-        unit: this._config.system.unit
-      } : null),
+      ...(this._config.system?.unit ? { unit: this._config.system.unit } : null),
       icon: this._config.system?.icon || 'mdi:house',
-      ...(this._config.system?.extra ? {
-        extra: this._config.system.extra
-      } : null),
-      ...(this._config.system?.color ? {
-        color: this._config.system.color
-      } : null),
+      ...(this._config.system?.extra ? { extra: this._config.system.extra } : null),
+      ...(this._config.system?.color ? { color: this._config.system.color } : null),
       position: 'middle',
       extra,
-      calculations: {
-        toSystem: systemPower > 0 ? systemPower : 0,
-        fromSystem: systemPower < 0 ? systemPower : 0,
-        systemTotal: systemPower
-      },
+      calculations: { toSystem: systemPower > 0 ? systemPower : 0, fromSystem: systemPower < 0 ? systemPower : 0, systemTotal: systemPower },
     })
 
     const elementsByPosition = {
@@ -310,116 +232,54 @@ export class SystemFlowCard extends LitElement {
           : 0
 
         const flowSVGElement = (this.renderRoot?.querySelector(`#${flowId}`) ?? null) as SVGSVGElement;
-        if (
-          flowSVGElement &&
-          dur &&
-          this.previousDur[flowId] &&
-          this.previousDur[flowId] !== dur
-        ) {
+        if (flowSVGElement && dur && this.previousDur[flowId] && this.previousDur[flowId] !== dur) {
           flowSVGElement.pauseAnimations();
-          flowSVGElement.setCurrentTime(
-            flowSVGElement.getCurrentTime() *
-              (dur / this.previousDur[flowId])
-          );
+          flowSVGElement.setCurrentTime(flowSVGElement.getCurrentTime() * (dur / this.previousDur[flowId]));
           flowSVGElement.unpauseAnimations();
         }
         this.previousDur[flowId] = dur;
-
-        return {
-          flowId, element, path, dur
-        }
+        return { flowId, element, path, dur }
       })];
     }));
 
-    const objectMap = (obj, fn) =>
-      Object.keys(obj).map(key =>
-        fn(key, obj[key])
-      )
+    const objectMap = (obj, fn) => Object.keys(obj).map(key => fn(key, obj[key]))
 
     return html`
       <ha-card .header=${this._config.title}>
         <div class="card-content">
           <div class="row" style="height:100%;">
-          
             <div class="col">
               <div class="spacer container-left"></div>
               ${elementsByPosition.left.map(element => this.elementToHtml(element))}
               <div class="spacer container-left"></div>
             </div>
-
             <div class="col">
               <div class="row">
-                ${elementsByPosition.top.length
-                  ? elementsByPosition.top.map(element => this.elementToHtml(element))
-                  : html`<div class="spacer container-top"></div>`
-                }
+                ${elementsByPosition.top.length ? elementsByPosition.top.map(element => this.elementToHtml(element)) : html`<div class="spacer container-top"></div>`}
               </div>
-
               <div class="row">
                 ${elementsByPosition.middle.map(element => this.elementToHtml(element, true))}
               </div>
-
               <div class="row">
-                ${elementsByPosition.bottom.length
-                  ? elementsByPosition.bottom.map(element => this.elementToHtml(element))
-                  : html`<div class="spacer container-bottom"></div>`
-                }
+                ${elementsByPosition.bottom.length ? elementsByPosition.bottom.map(element => this.elementToHtml(element)) : html`<div class="spacer container-bottom"></div>`}
               </div>
             </div>
-
             <div class="col">
               <div class="spacer container-right"></div>
               ${elementsByPosition.right.map(element => this.elementToHtml(element))}
               <div class="spacer container-right"></div>
             </div>
-
             <div class="lines">
               ${objectMap(lineCalcs, (pos, posLineCalcs) => html`
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  style="${svgBoxStylesByPosition[pos]}"
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" style="${svgBoxStylesByPosition[pos]}" viewBox="0 0 100 100" preserveAspectRatio="none">
                   ${posLineCalcs.map(posLineCalc => svg`
-                    <path
-                      d="${posLineCalc.path}"
-                      stroke="${this.getElementColor(posLineCalc.element)}"
-                      vector-effect="non-scaling-size"
-                      style="opacity: ${!posLineCalc.element.calculations.systemTotal && this._config?.fadeIdylElements ? .25 : 1};"
-                    ></path>
-                    ${this.displayValue(posLineCalc.element.calculations.systemTotal) &&
-                      html`
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          style="${svgBoxStylesByPosition[pos]}"
-                          viewBox="0 0 100 100"
-                          preserveAspectRatio="none"
-                          id="${posLineCalc.flowId}"
-                        >
-                          ${svg`
-                            <circle
-                              r="1"
-                              vector-effect="non-scaling-stroke"
-                              style="
-                                stroke-width: 4;
-                                stroke: ${this.getElementColor(posLineCalc.element)};
-                                fill: ${this.getElementColor(posLineCalc.element)};
-                              "
-                            >
-                              <animateMotion
-                                dur="${posLineCalc.dur}"
-                                rotate="auto"
-                                repeatCount="indefinite"
-                                calcMode="linear"
-                                path="${posLineCalc.path}"
-                                keyPoints="${posLineCalc.element.calculations.systemTotal > 0 ? '1;0' : '0;1'}"
-                                keyTimes="${posLineCalc.element.calculations.systemTotal > 0 ? '0;1' : '0;1'}"
-                              />
-                            </circle>
-                          `}
-                        </svg>
-                      `
+                    <path d="${posLineCalc.path}" stroke="${this.getElementColor(posLineCalc.element)}" vector-effect="non-scaling-size" style="opacity: ${!posLineCalc.element.calculations.systemTotal && this._config?.fadeIdylElements ? .25 : 1};"></path>
+                    ${this.displayValue(posLineCalc.element.calculations.systemTotal) && html`
+                        <svg xmlns="http://www.w3.org/2000/svg" style="${svgBoxStylesByPosition[pos]}" viewBox="0 0 100 100" preserveAspectRatio="none" id="${posLineCalc.flowId}">
+                          ${svg`<circle r="1" vector-effect="non-scaling-stroke" style="stroke-width: 4; stroke: ${this.getElementColor(posLineCalc.element)}; fill: ${this.getElementColor(posLineCalc.element)};">
+                              <animateMotion dur="${posLineCalc.dur}" rotate="auto" repeatCount="indefinite" calcMode="linear" path="${posLineCalc.path}" keyPoints="${posLineCalc.element.calculations.systemTotal > 0 ? '1;0' : '0;1'}" keyTimes="${posLineCalc.element.calculations.systemTotal > 0 ? '0;1' : '0;1'}" />
+                            </circle>`}
+                        </svg>`
                     }
                   `)}
                 </svg>
@@ -466,28 +326,29 @@ export class SystemFlowCard extends LitElement {
       flex-direction: column;
       align-items: center;
     }
-    .container-top,
-    .container-bottom {
-      padding: 0 10px;
-    }
-    .container-left,
-    .container-right {
-      padding: 10px 0;
-    }
-    .spacer {
-      width: 80px;
-      height: 80px;
-    }
+    .container-top, .container-bottom { padding: 0 10px; }
+    .container-left, .container-right { padding: 10px 0; }
+    .spacer { width: 80px; height: 80px; }
+    
     .circle {
       width: 80px;
       height: 80px;
       border-radius: 25%;
       border: 2px solid;
       overflow: hidden;
+      
+      /* --- LAYOUT FIXES --- */
       display: flex;
       flex-direction: column;
+      /* space-between pushes the first item to the top and last to the bottom */
+      justify-content: space-between; 
+      /* padding prevents the text from touching the very edge of the border */
+      padding: 4px 0; 
+      /* box-sizing ensures padding doesn't make the circle bigger than 80px */
+      box-sizing: border-box;
+      /* -------------------- */
+      
       align-items: center;
-      justify-content: space-evenly;
       text-align: center;
       font-size: 14px;
       line-height: 14px;
@@ -495,12 +356,33 @@ export class SystemFlowCard extends LitElement {
       text-decoration: none;
       color: var(--primary-text-color);
     }
+
+    /* FIX: Force rows to stay side-by-side */
+    .value-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 14px;
+      flex-wrap: nowrap;
+    }
+    
+    .icon-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
     ha-svg-icon {
       padding-bottom: 2px;
       fill: inherit !important;
     }
     ha-icon.small {
       --mdc-icon-size: 12px;
+      display: inline-block;
     }
     .side-extra {
       width: calc((100% - 24px) / 2);
@@ -512,11 +394,7 @@ export class SystemFlowCard extends LitElement {
       color: var(--secondary-text-color);
       font-size: 12px;
     }
-    line,
-    path {
-      stroke-width: 1;
-      fill: none;
-    }
+    line, path { stroke-width: 1; fill: none; }
     .circle svg {
       position: absolute;
       fill: none;
@@ -528,20 +406,12 @@ export class SystemFlowCard extends LitElement {
     }
   `;
 }
-
-const windowWithCards = window as unknown as Window & {
-  customCards: unknown[];
-};
+/* ... footer code same as before ... */
+const windowWithCards = window as unknown as Window & { customCards: unknown[]; };
 windowWithCards.customCards = windowWithCards.customCards || [];
 windowWithCards.customCards.push({
   type: "system-flow-card",
   name: "System Flow Card",
-  description:
-    "A system distribution card inspired by the official Energy Distribution card for Home Assistant",
+  description: "A system distribution card inspired by the official Energy Distribution card for Home Assistant",
 });
-
-declare global {
-  interface HTMLElementTagNameMap {
-    "system-flow-card": SystemFlowCard;
-  }
-}
+declare global { interface HTMLElementTagNameMap { "system-flow-card": SystemFlowCard; } }
