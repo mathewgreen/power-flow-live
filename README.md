@@ -69,6 +69,8 @@ The system is essentially an [element object](#element-object). The `value` is c
 | icon           | `string`    |               | Display icon for the element
 | color          | `string`    |               | Hex color for the element box
 | invert         | `boolean`   | false         | Invert the calculated system value (useful if your net calculation results in a negative number).
+| override       | `boolean`   | false         | **New:** Set to `true` to display a specific sensor value instead of the calculated result.
+| value          | `string`    |               | **New:** If `override` is true, this Entity ID will be displayed in the center (e.g., `sensor.total_grid`).
 | extra          | `object`    |               | Extra sensor values to display within the element box. See [element extra object](#element-extra-object) for additional extra options.
 
 #### Element object
