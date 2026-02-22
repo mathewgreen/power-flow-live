@@ -264,11 +264,12 @@ export class PowerFlowLive extends LitElement {
     };
 
     const halfBox = (this._config.boxSize || 80) / 2;
+    const boxSize = this._config.boxSize || 80;
     const svgBoxStylesByPosition = {
       'left': `position: absolute; left: 0; top: 0; width: calc(50% - ${halfBox}px); height: 100%;`,
-      'top': `position: absolute; left: 0; top: 0; width: 100%; height: calc(50% - ${halfBox}px);`,
+      'top': `position: absolute; left: -${halfBox}px; top: 0; width: calc(100% + ${boxSize}px); height: calc(50% - ${halfBox}px);`,
       'right': `position: absolute; left: calc(50% + ${halfBox}px); top: 0; width: calc(50% - ${halfBox}px); height: 100%;`,
-      'bottom': `position: absolute; left: 0; top: calc(50% + ${halfBox}px); width: 100%; height: calc(50% - ${halfBox}px);`,
+      'bottom': `position: absolute; left: -${halfBox}px; top: calc(50% + ${halfBox}px); width: calc(100% + ${boxSize}px); height: calc(50% - ${halfBox}px);`,
     }
 
     const svgLineMapByPosition = {
@@ -327,26 +328,48 @@ export class PowerFlowLive extends LitElement {
     const linesStyle = `top: ${linesTop}; bottom: ${linesBottom}; left: ${boxExpr}; width: calc(100% - 2 * ${boxExpr}); height: auto;`;
     const colPadding = `padding-top: ${topOffset}; padding-bottom: ${bottomOffset}; justify-content: space-around;`;
 
+    const numTop = elementsByPosition.top.length;
+    const numBottom = elementsByPosition.bottom.length;
+    const topRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); top: 0;`;
+    const bottomRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); bottom: 0;`;
+
     return html`
       <ha-card .header=${this._config.title} style="${cardStyle}">
         <div class="card-content">
-          <div class="row" style="height:100%; position: relative;">
+          <div class="row" style="height:100%; width:100%; position: relative;">
+            ${hasTop ? html`
+              <div style="${topRowStyle}">
+                ${elementsByPosition.top.map((element, i) => {
+                  const pc = (i + 0.5) / numTop * 100;
+                  return html`<div style="position: absolute; left: ${pc}%; transform: translateX(-50%);">${this.elementToHtml(element)}</div>`;
+                })}
+              </div>
+            ` : ''}
             <div class="col" style="${colPadding}">
               ${elementsByPosition.left.map(element => this.elementToHtml(element))}
             </div>
             <div class="col">
               <div class="row">
-                ${elementsByPosition.top.length ? elementsByPosition.top.map(element => this.elementToHtml(element)) : html`<div class="spacer container-top"></div>`}
+                <div class="spacer container-top"></div>
               </div>
               <div class="row">
                 ${elementsByPosition.middle.map(element => this.elementToHtml(element, true))}
               </div>
               <div class="row">
-                ${elementsByPosition.bottom.map(element => this.elementToHtml(element))}
+                ${hasBottom ? html`<div class="spacer container-bottom"></div>` : ''}
               </div>
             </div>
             <div class="col" style="${colPadding}">
               ${elementsByPosition.right.map(element => this.elementToHtml(element))}
+            </div>
+            ${hasBottom ? html`
+              <div style="${bottomRowStyle}">
+                ${elementsByPosition.bottom.map((element, i) => {
+                  const pc = (i + 0.5) / numBottom * 100;
+                  return html`<div style="position: absolute; left: ${pc}%; transform: translateX(-50%); bottom: 0;">${this.elementToHtml(element)}</div>`;
+                })}
+              </div>
+            ` : ''}
             <div class="lines" style="${linesStyle}">
               ${objectMap(lineCalcs, (pos, posLineCalcs) => html`
                 <svg xmlns="http://www.w3.org/2000/svg" style="${svgBoxStylesByPosition[pos]}" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -404,7 +427,7 @@ export class PowerFlowLive extends LitElement {
       flex-direction: column;
       align-items: center;
     }
-    .container-top, .container-bottom { padding: 0 10px; }
+    .container-top, .container-bottom { padding: 0; }
     .container-left, .container-right { padding: 10px 0; }
     .spacer { width: var(--pfl-box-size, 80px); height: var(--pfl-box-size, 80px); }
 
