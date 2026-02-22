@@ -3,7 +3,7 @@ import { HomeAssistant, stateIcon } from "custom-card-helpers";
 import { HassEntity } from 'home-assistant-js-websocket';
 import { css, html, LitElement, svg, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { SystemFlowCardConfig } from "./system-flow-card-config.js";
+import { PowerFlowLiveConfig } from "./power-flow-live-config.js";
 import {
   coerceNumber,
   round,
@@ -13,14 +13,14 @@ import { CalculatedElementDef } from "./type.js";
 
 // DEBUG: Version Logger to verify file load
 const VERSION = "2.1-FIXED";
-console.info(`%c SYSTEM-FLOW-CARD ${VERSION} IS LOADED `, 'background: #4caf50; color: #fff; font-weight: bold;');
+console.info(`%c POWER-FLOW-LIVE ${VERSION} IS LOADED `, 'background: #4caf50; color: #fff; font-weight: bold;');
 
-@customElement("system-flow-card")
-export class SystemFlowCard extends LitElement {
+@customElement("power-flow-live")
+export class PowerFlowLive extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @state() private _config = {} as SystemFlowCardConfig;
+  @state() private _config = {} as PowerFlowLiveConfig;
 
-  setConfig(config: SystemFlowCardConfig): void {
+  setConfig(config: PowerFlowLiveConfig): void {
     if (!config.elements || (!config.elements.length)) {
       throw new Error("At least one entity must be defined");
     }
@@ -70,6 +70,25 @@ export class SystemFlowCard extends LitElement {
   private getElementColor = (element: CalculatedElementDef): string => {
     if(!element.color) return 'var(--primary-text-color)';
     return element.color;
+  }
+
+  private isElementUnavailable = (element: CalculatedElementDef): boolean => {
+    const entity = this.getElementEntity(element);
+    if (!entity) return true;
+    const state = entity.state;
+    return state === 'unavailable' || state === 'unknown';
+  }
+
+  private getElementOpacity = (element: CalculatedElementDef, preventFade: boolean = false): number => {
+    if (!element.fade || element.fade === 'never') return 1;
+    if (element.fade === 'unavailable') {
+      return this.isElementUnavailable(element) ? 0.25 : 1;
+    }
+    if (element.fade === 'no-flow') {
+      if (this.isElementUnavailable(element)) return 0.25;
+      return !element.calculations.systemTotal && !preventFade ? 0.25 : 1;
+    }
+    return 1;
   }
 
   private getElementUnit = (element: CalculatedElementDef): string | undefined =>
@@ -154,7 +173,7 @@ export class SystemFlowCard extends LitElement {
 
   private elementToHtml = (element: CalculatedElementDef, preventFade: boolean = false) => html`
     <div class="circle-container container-${element.position}" style="
-      opacity: ${!element.calculations.systemTotal && !preventFade && this._config?.fadeIdylElements ? .25 : 1};
+      opacity: ${this.getElementOpacity(element, preventFade)};
     ">
       <div class="circle" style="border-color: ${this.getElementColor(element)}">
         ${element.fill ? (
@@ -169,19 +188,19 @@ export class SystemFlowCard extends LitElement {
         ${/* TOP SECTION */ ''}
         ${element.position === 'bottom'
           ? this.elementValueArrows(element)
-          : html`<div class="value-row">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
+          : html`<div class="value-row extra-main">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
         }
 
         ${/* MIDDLE SECTION */ ''}
         <div class="icon-row">
           <span class="side-extra">${element.extra?.left ? this.getEntityValue(element.extra?.left, false, true) : ' '}</span>
-          <ha-icon style="width: 24px; height: 24px; fill: ${this.getElementColor(element)}" icon="${this.getElementIconId(element)}"></ha-icon>
+          <ha-icon style="width: var(--pfl-icon-size, 24px); height: var(--pfl-icon-size, 24px); fill: ${this.getElementColor(element)}" icon="${this.getElementIconId(element)}"></ha-icon>
           <span class="side-extra">${element.extra?.right ? this.getEntityValue(element.extra?.right, false, true) : ' '}</span>
         </div>
 
         ${/* BOTTOM SECTION */ ''}
         ${element.position === 'bottom'
-          ? html`<div class="value-row">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
+          ? html`<div class="value-row extra-main">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
           : this.elementValueArrows(element)
         }
       </div>
@@ -248,11 +267,12 @@ export class SystemFlowCard extends LitElement {
       middle: elements.filter(element => element.position === 'middle')
     };
 
+    const halfBox = (this._config.boxSize || 80) / 2 + 2;
     const svgBoxStylesByPosition = {
-      'left': 'position: absolute; left: 0; top: 10px; width: calc(50% - 42px); height: calc(100% - 20px);',
-      'top': 'position: absolute; left: 10px; top: 0; width: calc(100% - 20px); height: calc(50% - 42px);',
-      'right': 'position: absolute; left: calc(50% + 42px); top: 10px; width: calc(50% - 42px); height: calc(100% - 20px);',
-      'bottom': 'position: absolute; left: 10px; top: calc(50% + 42px); width: calc(100% - 20px); height: calc(50% - 42px);',
+      'left': `position: absolute; left: 0; top: 10px; width: calc(50% - ${halfBox}px); height: calc(100% - 20px);`,
+      'top': `position: absolute; left: 10px; top: 0; width: calc(100% - 20px); height: calc(50% - ${halfBox}px);`,
+      'right': `position: absolute; left: calc(50% + ${halfBox}px); top: 10px; width: calc(50% - ${halfBox}px); height: calc(100% - 20px);`,
+      'bottom': `position: absolute; left: 10px; top: calc(50% + ${halfBox}px); width: calc(100% - 20px); height: calc(50% - ${halfBox}px);`,
     }
 
     const svgLineMapByPosition = {
@@ -293,8 +313,16 @@ export class SystemFlowCard extends LitElement {
 
     const objectMap = (obj, fn) => Object.keys(obj).map(key => fn(key, obj[key]))
 
+    const cardStyle = `
+      ${this._config.valueFontSize ? `--pfl-value-font-size: ${this._config.valueFontSize}px;` : ''}
+      ${this._config.extraFontSize ? `--pfl-extra-font-size: ${this._config.extraFontSize}px;` : ''}
+      ${this._config.sideExtraFontSize ? `--pfl-side-extra-font-size: ${this._config.sideExtraFontSize}px;` : ''}
+      ${this._config.boxSize ? `--pfl-box-size: ${this._config.boxSize}px;` : ''}
+      ${this._config.iconSize ? `--pfl-icon-size: ${this._config.iconSize}px;` : ''}
+    `;
+
     return html`
-      <ha-card .header=${this._config.title}>
+      <ha-card .header=${this._config.title} style="${cardStyle}">
         <div class="card-content">
           <div class="row" style="height:100%;">
             <div class="col">
@@ -321,7 +349,7 @@ export class SystemFlowCard extends LitElement {
               ${objectMap(lineCalcs, (pos, posLineCalcs) => html`
                 <svg xmlns="http://www.w3.org/2000/svg" style="${svgBoxStylesByPosition[pos]}" viewBox="0 0 100 100" preserveAspectRatio="none">
                   ${posLineCalcs.map(posLineCalc => svg`
-                    <path d="${posLineCalc.path}" stroke="${this.getElementColor(posLineCalc.element)}" vector-effect="non-scaling-stroke" style="opacity: ${!posLineCalc.element.calculations.systemTotal && this._config?.fadeIdylElements ? .25 : 1};"></path>
+                    <path d="${posLineCalc.path}" stroke="${this.getElementColor(posLineCalc.element)}" vector-effect="non-scaling-stroke" style="opacity: ${this.getElementOpacity(posLineCalc.element)};"></path>
                     ${this.displayValue(posLineCalc.element.calculations.systemTotal) && html`
                         <svg xmlns="http://www.w3.org/2000/svg" style="${svgBoxStylesByPosition[pos]}" viewBox="0 0 100 100" preserveAspectRatio="none" id="${posLineCalc.flowId}">
                           ${svg`<circle r="1" vector-effect="non-scaling-stroke" style="stroke-width: 4; stroke: ${this.getElementColor(posLineCalc.element)}; fill: ${this.getElementColor(posLineCalc.element)};">
@@ -354,10 +382,10 @@ export class SystemFlowCard extends LitElement {
     }
     .lines {
       position: absolute;
-      width: calc(100% - 200px);
-      height: calc(100% - 200px);
-      left: 100px;
-      top: 100px;
+      width: calc(100% - 2 * (var(--pfl-box-size, 80px) + 20px));
+      height: calc(100% - 2 * (var(--pfl-box-size, 80px) + 20px));
+      left: calc(var(--pfl-box-size, 80px) + 20px);
+      top: calc(var(--pfl-box-size, 80px) + 20px);
     }
     .row {
       display: flex;
@@ -376,36 +404,34 @@ export class SystemFlowCard extends LitElement {
     }
     .container-top, .container-bottom { padding: 0 10px; }
     .container-left, .container-right { padding: 10px 0; }
-    .spacer { width: 80px; height: 80px; }
-    
+    .spacer { width: var(--pfl-box-size, 80px); height: var(--pfl-box-size, 80px); }
+
     .circle {
-      width: 80px;
-      height: 80px;
+      width: var(--pfl-box-size, 80px);
+      height: var(--pfl-box-size, 80px);
       border-radius: 25%;
       border: 2px solid;
       overflow: hidden;
-      
+
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      
-      /* FIX: Uneven padding to lift bottom text */
-      /* Top: 2px (make room), Bottom: 6px (lift "3W" up) */
-      padding: 2px 0 6px 0; 
-      
+
+      padding: 4px 0 6px 0;
+
       box-sizing: border-box;
-      
+
       align-items: center;
       text-align: center;
-      
-      /* --- FONT ADJUSTMENTS --- */
-      font-size: 12px; 
-      line-height: 1.1; /* FIX: Tighter line height to fit emojis */
-      /* ------------------------ */
-      
+
+      font-size: var(--pfl-value-font-size, 12px);
+      line-height: 1.1;
+
       position: relative;
       text-decoration: none;
       color: var(--primary-text-color);
+
+      --mdc-icon-size: var(--pfl-icon-size, 24px);
     }
 
     /* FIX: Force rows to stay side-by-side */
@@ -435,12 +461,15 @@ export class SystemFlowCard extends LitElement {
       --mdc-icon-size: 12px;
       display: inline-block;
     }
+    .extra-main {
+      font-size: var(--pfl-extra-font-size, 10px);
+    }
     .side-extra {
-      width: calc((100% - 24px) / 2);
+      width: calc((100% - var(--pfl-icon-size, 24px)) / 2);
       margin: auto;
       overflow: hidden;
-      font-size: 10px;
-      line-height: 1.1; /* FIX: Compact the side text so it doesn't push bottom text down */
+      font-size: var(--pfl-side-extra-font-size, var(--pfl-extra-font-size, 10px));
+      line-height: 1.1;
     }
     .label {
       color: var(--secondary-text-color);
@@ -462,8 +491,8 @@ export class SystemFlowCard extends LitElement {
 const windowWithCards = window as unknown as Window & { customCards: unknown[]; };
 windowWithCards.customCards = windowWithCards.customCards || [];
 windowWithCards.customCards.push({
-  type: "system-flow-card",
-  name: "System Flow Card",
-  description: "A system distribution card inspired by the official Energy Distribution card for Home Assistant",
+  type: "power-flow-live",
+  name: "Power Flow Live",
+  description: "A power flow card inspired by the official Energy Distribution card for Home Assistant",
 });
-declare global { interface HTMLElementTagNameMap { "system-flow-card": SystemFlowCard; } }
+declare global { interface HTMLElementTagNameMap { "power-flow-live": PowerFlowLive; } }

@@ -1,34 +1,22 @@
-# System Flow Card
+# Power Flow Live
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=flat-square)](https://github.com/hacs/integration)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/flyrmyr/system-flow-card?style=flat-square)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/flyrmyr/system-flow-card/CI?style=flat-square)
-![GitHub all releases](https://img.shields.io/github/downloads/flyrmyr/system-flow-card/total?style=flat-square)
-
-This card for [Home Assistant](https://home-assistant.io/) Dashboards is designed to provide system distribution in an identical style to the Official Energy Distribution card included by Home Assistant.
+A custom [Home Assistant](https://home-assistant.io/) Lovelace card that visualises live power flow with animated dots, inspired by the official Energy Distribution card.
 
 <img width="454" alt="Screenshot 2023-02-17 at 1 46 52 AM" src="https://user-images.githubusercontent.com/14035884/219596902-40d68252-fa60-49ef-a354-f14d8a89b1a3.png">
 
-## Install
-
-### HACS (recommended)
-
-This card is available in [HACS](https://hacs.xyz/) (Home Assistant Community Store).
-<small>_HACS is a third party community store and is not included in Home Assistant out of the box._</small>
-
 ### Manual install
 
-1. Download and copy `system-flow-card.js` from the [latest release](https://github.com/flyrmyr/system-flow-card/releases/latest) into your `config/www` directory.
+1. Download and copy `power-flow-live.js` from the [latest release](https://github.com/mathewgreen/power-flow-live/releases/latest) into your `config/www` directory.
 
 2. Add the resource reference as decribed below.
 
 ### Add resource reference
 
-If you configure Dashboards via YAML, add a reference to `system-flow-card.js` inside your `configuration.yaml`:
+If you configure Dashboards via YAML, add a reference to `power-flow-live.js` inside your `configuration.yaml`:
 
 ```yaml
 resources:
-  - url: /local/system-flow-card.js
+  - url: /local/power-flow-live.js
     type: module
 ```
 
@@ -39,8 +27,8 @@ Else, if you prefer the graphical editor, use the menu to add the resource:
 3. Click three dot icon
 4. Select Resources
 5. Hit (+ ADD RESOURCE) icon
-6. Enter URL `/local/system-flow-card.js` and select type "JavaScript Module".
-   (Use `/hacsfiles/system-flow-card/system-flow-card.js` and select "JavaScript Module" for HACS install if HACS didn't do it already)
+6. Enter URL `/local/power-flow-live.js` and select type "JavaScript Module".
+   (Use `/hacsfiles/power-flow-live/power-flow-live.js` and select "JavaScript Module" for HACS install if HACS didn't do it already)
 
 ## Using the card
 
@@ -53,12 +41,16 @@ I recommend looking at the [Example usage section](#example-usage) to understand
 
 | Name              | Type     |    Default    | Description |
 | ----------------- | -------- | :-----------: | ------------|
-| type              | `string` | **required**  | `custom:system-flow-card`.
+| type              | `string` | **required**  | `custom:power-flow-live`.
 | title             | `string` |               | Shows a title at the top of the card.
 | system            | `object` |               | Define parameters of the central `System` element, see [system object](#system-object) for additional system element options.
 | elements          | `object` | **required**  | One or more sensor entities, see [element object](#element-object) for additional entity options.
-| speed             | `string` | 5             | Define the average time (s) for dots to travel.         
-| fadeIdylElements  | `string` |               | Fade elements that are not currently producing or consuming.
+| speed             | `number` | `5`           | Average time (s) for dots to travel.
+| boxSize           | `number` | `80`          | Size (px) of each element box.
+| iconSize          | `number` | `24`          | Size (px) of icons inside element boxes.
+| valueFontSize     | `number` | `12`          | Font size (px) for the main value text in element boxes.
+| extraFontSize     | `number` | `10`          | Font size (px) for the extra main sensor text.
+| sideExtraFontSize | `number` | `10`          | Font size (px) for the left/right extra sensor text.
 
 #### System object
 The system is essentially an [element object](#element-object). The `value` is calculated from the difference in providers and consumers in the system (a positive value shows net unaccounted for production). This element has a central position.
@@ -85,6 +77,7 @@ The system is essentially an [element object](#element-object). The `value` is c
 | fill           | `string`    |               | Entity ID of a sensor providing a state of 0 - 100 (%) fill of the element box
 | invert         | `boolean`   | false         | Invert element value for the system flow calculation
 | exclude        | `boolean`   | false         | Exclude element value from the system flow calculation
+| fade           | `string`    | `never`       | Controls when the element fades out. `never`: never fade. `no-flow`: fade when power flow is zero. `unavailable`: fade only when the entity is unavailable/unknown.
 | extra          | `object`    |               | Extra sensor values to display within the element box. See [element extra object](#element-extra-object) for additional extra options.
 
 #### Element value object
@@ -109,9 +102,12 @@ The system is essentially an [element object](#element-object). The `value` is c
 For those testing, here is my current config:
 
 ```yaml
-type: custom:system-flow-card
+type: custom:power-flow-live
 speed: 3
-fadeIdylElements: true
+boxSize: 90
+iconSize: 28
+valueFontSize: 14
+extraFontSize: 11
 system:
   unit: W
   icon: mdi:rv-truck
@@ -122,6 +118,7 @@ elements:
     icon: mdi:power-socket-au
     position: left
     color: '#B62D00'
+    fade: no-flow
     extra:
       main: sensor.victron_multiplus_state_238
       left: sensor.victron_multiplus_activein_l1_voltage_238
@@ -130,12 +127,14 @@ elements:
     icon: mdi:engine
     position: left
     color: '#f67828'
+    fade: no-flow
     extra:
       left: sensor.victron_alternator_battery_voltage
       right: sensor.victron_alternator_battery_current
   - value: sensor.victron_battery_power
     invert: true
     icon: mdi:car-battery
+    fade: unavailable
     extra:
       main: sensor.victron_system_battery_soc
       left: sensor.victron_system_battery_voltage
@@ -145,6 +144,7 @@ elements:
     color: '#3FF628'
   - value: sensor.victron_solar_pv_power
     icon: mdi:solar-power-variant
+    fade: no-flow
     extra:
       main: sensor.victron_solar_yield_today
       left: sensor.victron_solar_pv_voltage
@@ -171,7 +171,11 @@ elements:
 
 ## Credits
 
-- [HA Energy Distribution Card](https://www.home-assistant.io//dashboards/energy/#energy-distribution)
+This project is a fork of [samuelolteanu/system-flow-card](https://github.com/samuelolteanu/system-flow-card), which was itself forked from [flyrmyr/system-flow-card](https://github.com/flyrmyr/system-flow-card).
+
+- [flyrmyr](https://github.com/flyrmyr/system-flow-card) — original System Flow Card
+- [samuelolteanu](https://github.com/samuelolteanu/system-flow-card) — intermediate fork
+- [ulic75/power-flow-card](https://github.com/ulic75/power-flow-card) — inspiration
+- [HA Energy Distribution Card](https://www.home-assistant.io/dashboards/energy/#energy-distribution) — official HA card that inspired the design
 - [@angular/cdk](https://github.com/angular/components/tree/main/src/cdk)
 - [Jack Moore](https://www.jacklmoore.com/notes/rounding-in-javascript/)
-- [ulic75](https://github.com/ulic75/power-flow-card)

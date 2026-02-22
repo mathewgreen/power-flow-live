@@ -11,7 +11,7 @@ const dev = process.env.ROLLUP_WATCH;
 const serveOptions = {
   contentBase: ["./dist"],
   host: "0.0.0.0",
-  port: 5000,
+  port: 5050,
   allowCrossOrigin: true,
   headers: {
     "Access-Control-Allow-Origin": "*",
@@ -20,7 +20,7 @@ const serveOptions = {
 
 export default [
   {
-    input: "src/system-flow-card.ts",
+    input: "src/power-flow-live.ts",
     output: [
       {
         dir: "./dist",

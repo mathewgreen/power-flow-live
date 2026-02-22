@@ -18,6 +18,7 @@ export type ElementDef = SystemElementDef & {
   fill?: string;
   invert?: boolean;
   exclude?: boolean;
+  fade?: "never" | "no-flow" | "unavailable";
 };
 
 export type CalculatedElementDef = ElementDef & {

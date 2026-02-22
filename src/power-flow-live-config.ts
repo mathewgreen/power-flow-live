@@ -1,9 +1,13 @@
 import { LovelaceCardConfig } from "custom-card-helpers";
 import { SystemElementDef, ElementDef } from "./type.js";
 
-export interface SystemFlowCardConfig extends LovelaceCardConfig {
+export interface PowerFlowLiveConfig extends LovelaceCardConfig {
   elements: Array<ElementDef>;
   system?: SystemElementDef;
   speed: number;
-  fadeIdylElements?: boolean;
+  valueFontSize?: number;
+  extraFontSize?: number;
+  sideExtraFontSize?: number;
+  boxSize?: number;
+  iconSize?: number;
 }

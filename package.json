@@ -1,7 +1,7 @@
 {
-  "name": "system-flow-card",
+  "name": "power-flow-live",
   "version": "0.1.0",
-  "description": "A system flow card for Home Assistant",
+  "description": "A power flow card for Home Assistant",
   "keywords": [
     "home-assistant",
     "homeassistant",
@@ -12,14 +12,14 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/flyrmyr/system-flow-card.git"
+    "url": "git+https://github.com/mathewgreen/power-flow-live.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/flyrmyr/system-flow-card/issues"
+    "url": "https://github.com/mathewgreen/power-flow-live/issues"
   },
-  "homepage": "https://github.com/flyrmyr/system-flow-card#readme",
+  "homepage": "https://github.com/mathewgreen/power-flow-live#readme",
   "scripts": {
     "build": "rollup -c",
     "lint": "eslint src/*",
