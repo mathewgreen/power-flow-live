@@ -11,10 +11,6 @@ import {
 import { logError } from "./logging.js";
 import { CalculatedElementDef } from "./type.js";
 
-// DEBUG: Version Logger to verify file load
-const VERSION = "2.1-FIXED";
-console.info(`%c POWER-FLOW-LIVE ${VERSION} IS LOADED `, 'background: #4caf50; color: #fff; font-weight: bold;');
-
 @customElement("power-flow-live")
 export class PowerFlowLive extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;

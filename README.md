@@ -4,6 +4,15 @@ A custom [Home Assistant](https://home-assistant.io/) Lovelace card that visuali
 
 <img width="454" alt="Screenshot 2023-02-17 at 1 46 52 AM" src="https://user-images.githubusercontent.com/14035884/219596902-40d68252-fa60-49ef-a354-f14d8a89b1a3.png">
 
+## Installation
+
+### HACS (recommended)
+
+1. Open HACS in your Home Assistant instance
+2. Search for "Power Flow Live"
+3. Click **Install**
+4. Restart Home Assistant
+
 ### Manual install
 
 1. Download and copy `power-flow-live.js` from the [latest release](https://github.com/mathewgreen/power-flow-live/releases/latest) into your `config/www` directory.
