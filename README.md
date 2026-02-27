@@ -60,6 +60,7 @@ I recommend looking at the [Example usage section](#example-usage) to understand
 | valueFontSize     | `number` | `12`          | Font size (px) for the main value text in element boxes.
 | extraFontSize     | `number` | `10`          | Font size (px) for the extra main sensor text.
 | sideExtraFontSize | `number` | `10`          | Font size (px) for the left/right extra sensor text.
+| extraRowFontSize  | `number` | `10`          | Font size (px) for the extra row label/value text.
 
 #### System object
 The system is essentially an [element object](#element-object). The `value` is calculated from the difference in providers and consumers in the system (a positive value shows net unaccounted for production). This element has a central position.
@@ -81,6 +82,7 @@ The system is essentially an [element object](#element-object). The `value` is c
 | value          | `string` / `object` | **required** | Entity ID of a sensor providing a state value, (positive values for element consumption) (unless the `inverted` option is set to true) **or** a split value object. See [element value object](#element-value-object) for split value options.
 | unit           | `string`    | `entity.unit` | Display unit for the element value
 | position       | `string`    | **required**  | Placement of entity box. Must be either `top` `left` `bottom` or `right`
+| type           | `string`    | `standard`    | Box type. `standard`: default square box. `wide`: double-width box, useful for displaying extra rows.
 | icon           | `string`    |               | Display icon for the element
 | color          | `string`    |               | Hex color for the element box
 | fill           | `string`    |               | Entity ID of a sensor providing a state of 0 - 100 (%) fill of the element box
@@ -100,9 +102,23 @@ The system is essentially an [element object](#element-object). The `value` is c
 
 | Name           | Type     | Description |
 | -------------- | -------- | ----------- |
-| main           | `string` | Entity ID of a sensor providing a state value to display. The sensors `entity.unit` will be displayed.
-| left           | `string` | Entity ID of a sensor providing a state value to display. The sensors `entity.unit` will be displayed.
-| right          | `string` | Entity ID of a sensor providing a state value to display. The sensors `entity.unit` will be displayed.
+| main           | `string` | Entity ID of a sensor providing a state value to display. The sensor's `entity.unit` will be displayed.
+| left           | `string` | Entity ID of a sensor providing a state value to display. The sensor's `entity.unit` will be displayed.
+| right          | `string` | Entity ID of a sensor providing a state value to display. The sensor's `entity.unit` will be displayed.
+| rows           | `array`  | Array of labeled extra rows. Each row is an object with `label` (display text) and `value` (Entity ID). Best used with `type: wide` elements. See [element extra rows](#element-extra-rows).
+
+#### Element extra rows
+
+Each entry in the `rows` array is an object:
+
+| Name           | Type     | Description |
+| -------------- | -------- | ----------- |
+| label          | `string` | Display label for the row (shown on the left side)
+| value          | `string` | Entity ID of a sensor providing a state value to display (shown on the right side with unit)
+
+### Display precision
+
+The card respects each entity's `display_precision` setting from the Home Assistant entity registry. If you set an entity's display precision to 0 in HA, the card will show whole numbers. If no display precision is configured, the raw value is shown without rounding.
 
 ### Example usage
 
@@ -144,10 +160,16 @@ elements:
     invert: true
     icon: mdi:car-battery
     fade: unavailable
+    type: wide
     extra:
       main: sensor.victron_system_battery_soc
       left: sensor.victron_system_battery_voltage
       right: sensor.victron_system_battery_current
+      rows:
+        - label: Temp
+          value: sensor.victron_battery_temperature
+        - label: TTG
+          value: sensor.victron_battery_time_to_go
     fill: sensor.victron_system_battery_soc
     position: bottom
     color: '#3FF628'
