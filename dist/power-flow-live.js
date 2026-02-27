@@ -100,7 +100,7 @@ function coerceNumber(value, fallbackValue = 0) {
     return isNumberValue(value) ? Number(value) : fallbackValue;
 }
 
-var version = "1.0.0";
+var version = "1.1.0";
 
 /* eslint-disable no-console */
 // Log Version
@@ -185,11 +185,9 @@ let PowerFlowLive = class PowerFlowLive extends s {
             if (abs && typeof value === 'number') {
                 value = Math.abs(value);
             }
-            // 3. Rounding Logic (Only for valid numbers)
-            if (typeof value === 'number') {
-                // Default to 1 decimal place if 'places' is strictly false/undefined
-                const prec = typeof places === 'number' ? places : 1;
-                const factor = 10 ** prec;
+            // 3. Rounding Logic (Only for valid numbers, only when precision is specified)
+            if (typeof value === 'number' && typeof places === 'number') {
+                const factor = 10 ** places;
                 value = Math.round(value * factor) / factor;
             }
             // 4. Append Unit
@@ -199,12 +197,15 @@ let PowerFlowLive = class PowerFlowLive extends s {
             return value;
         };
         this.getEntityValue = (ent, abs = false, showUnit = false, places = false) => {
+            var _a, _b;
             const entity = typeof ent === 'string' ? this.getEntity(ent) : ent;
             if (!entity)
                 return undefined;
             const value = entity === null || entity === void 0 ? void 0 : entity.state;
             const unit = showUnit ? this.getEntityUnit(entity) : null;
-            return this.displayValue(value, abs, unit, places);
+            const entityReg = (_a = this.hass.entities) === null || _a === void 0 ? void 0 : _a[entity.entity_id];
+            const precision = typeof places === 'number' ? places : ((_b = entityReg === null || entityReg === void 0 ? void 0 : entityReg.display_precision) !== null && _b !== void 0 ? _b : false);
+            return this.displayValue(value, abs, unit, precision);
         };
         this.elementArrows = (value, position, fill = null) => {
             if (!value)
@@ -238,12 +239,12 @@ let PowerFlowLive = class PowerFlowLive extends s {
     </div>
   `;
         this.elementToHtml = (element, preventFade = false) => {
-            var _a, _b, _c, _d, _e, _f, _g, _h;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
             return x `
     <div class="circle-container container-${element.position}" style="
       opacity: ${this.getElementOpacity(element, preventFade)};
     ">
-      <div class="circle" style="border-color: ${this.getElementColor(element)}">
+      <div class="circle" style="border-color: ${this.getElementColor(element)}; ${element.type === 'wide' ? 'width: calc(2 * var(--pfl-box-size, 80px)); height: auto; min-height: var(--pfl-box-size, 80px); border-radius: calc(0.25 * var(--pfl-box-size, 80px))' : ''}">
         ${element.fill ? (x `<div style="
             height: ${coerceNumber(this.getEntityValue(element.fill, true, false))}%; 
             position: absolute; width: 100%; bottom: 0px;
@@ -267,6 +268,14 @@ let PowerFlowLive = class PowerFlowLive extends s {
         ${element.position === 'bottom'
                 ? x `<div class="value-row extra-main">${((_g = element.extra) === null || _g === void 0 ? void 0 : _g.main) ? this.getEntityValue((_h = element.extra) === null || _h === void 0 ? void 0 : _h.main, false, true) : ' '}</div>`
                 : this.elementValueArrows(element)}
+
+        ${ /* EXTRA ROWS */''}
+        ${(_k = (_j = element.extra) === null || _j === void 0 ? void 0 : _j.rows) === null || _k === void 0 ? void 0 : _k.map(row => x `
+          <div class="extra-row">
+            <span class="extra-row-label">${row.label}</span>
+            <span class="extra-row-value">${this.getEntityValue(row.value, false, true)}</span>
+          </div>
+        `)}
       </div>
     </div>
   `;
@@ -377,6 +386,7 @@ let PowerFlowLive = class PowerFlowLive extends s {
       ${this._config.valueFontSize ? `--pfl-value-font-size: ${this._config.valueFontSize}px;` : ''}
       ${this._config.extraFontSize ? `--pfl-extra-font-size: ${this._config.extraFontSize}px;` : ''}
       ${this._config.sideExtraFontSize ? `--pfl-side-extra-font-size: ${this._config.sideExtraFontSize}px;` : ''}
+      ${this._config.extraRowFontSize ? `--pfl-extra-row-font-size: ${this._config.extraRowFontSize}px;` : ''}
       ${this._config.boxSize ? `--pfl-box-size: ${this._config.boxSize}px;` : ''}
       ${this._config.iconSize ? `--pfl-icon-size: ${this._config.iconSize}px;` : ''}
     `;
@@ -391,8 +401,8 @@ let PowerFlowLive = class PowerFlowLive extends s {
         const colPadding = `padding-top: ${topOffset}; padding-bottom: ${bottomOffset}; justify-content: space-around;`;
         const numTop = elementsByPosition.top.length;
         const numBottom = elementsByPosition.bottom.length;
-        const topRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); top: 0;`;
-        const bottomRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); bottom: 0;`;
+        const topRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); top: 0; z-index: 1;`;
+        const bottomRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); bottom: 0; z-index: 1;`;
         return x `
       <ha-card .header=${this._config.title} style="${cardStyle}">
         <div class="card-content">
@@ -486,6 +496,8 @@ PowerFlowLive.styles = i$2 `
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
+      z-index: 1;
     }
     .container-top, .container-bottom { padding: 0; }
     .container-left, .container-right { padding: 10px 0; }
@@ -497,6 +509,7 @@ PowerFlowLive.styles = i$2 `
       border-radius: 25%;
       border: 2px solid;
       overflow: hidden;
+      background: var(--card-background-color, var(--ha-card-background, #1c1c1c));
 
       display: flex;
       flex-direction: column;
@@ -548,6 +561,21 @@ PowerFlowLive.styles = i$2 `
     }
     .extra-main {
       font-size: var(--pfl-extra-font-size, 10px);
+    }
+    .extra-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0 10%;
+      box-sizing: border-box;
+      font-size: var(--pfl-extra-row-font-size, var(--pfl-extra-font-size, 10px));
+      line-height: 1.3;
+    }
+    .extra-row-label {
+      opacity: 0.7;
+    }
+    .extra-row-value {
+      text-align: right;
     }
     .side-extra {
       width: calc((100% - var(--pfl-icon-size, 24px)) / 2);

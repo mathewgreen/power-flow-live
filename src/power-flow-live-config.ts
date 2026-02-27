@@ -8,6 +8,7 @@ export interface PowerFlowLiveConfig extends LovelaceCardConfig {
   valueFontSize?: number;
   extraFontSize?: number;
   sideExtraFontSize?: number;
+  extraRowFontSize?: number;
   boxSize?: number;
   iconSize?: number;
 }

@@ -114,11 +114,9 @@ export class PowerFlowLive extends LitElement {
       value = Math.abs(value);
     }
 
-    // 3. Rounding Logic (Only for valid numbers)
-    if (typeof value === 'number') {
-      // Default to 1 decimal place if 'places' is strictly false/undefined
-      const prec = typeof places === 'number' ? places : 1;
-      const factor = 10 ** prec;
+    // 3. Rounding Logic (Only for valid numbers, only when precision is specified)
+    if (typeof value === 'number' && typeof places === 'number') {
+      const factor = 10 ** places;
       value = Math.round(value * factor) / factor;
     }
 
@@ -134,7 +132,9 @@ export class PowerFlowLive extends LitElement {
     if(!entity) return undefined;
     const value = entity?.state;
     const unit = showUnit ? this.getEntityUnit(entity) : null;
-    return this.displayValue(value, abs, unit, places);
+    const entityReg = (this.hass as any).entities?.[entity.entity_id];
+    const precision = typeof places === 'number' ? places : (entityReg?.display_precision ?? false);
+    return this.displayValue(value, abs, unit, precision);
   }
 
   private elementArrows = (value: number, position: string, fill: string | null = null) => {
@@ -171,7 +171,7 @@ export class PowerFlowLive extends LitElement {
     <div class="circle-container container-${element.position}" style="
       opacity: ${this.getElementOpacity(element, preventFade)};
     ">
-      <div class="circle" style="border-color: ${this.getElementColor(element)}">
+      <div class="circle" style="border-color: ${this.getElementColor(element)}; ${element.type === 'wide' ? 'width: calc(2 * var(--pfl-box-size, 80px)); height: auto; min-height: var(--pfl-box-size, 80px); border-radius: calc(0.25 * var(--pfl-box-size, 80px))' : ''}">
         ${element.fill ? (
           html`<div style="
             height: ${coerceNumber(this.getEntityValue(element.fill, true, false))}%; 
@@ -199,6 +199,14 @@ export class PowerFlowLive extends LitElement {
           ? html`<div class="value-row extra-main">${element.extra?.main ? this.getEntityValue(element.extra?.main, false, true) : ' '}</div>`
           : this.elementValueArrows(element)
         }
+
+        ${/* EXTRA ROWS */ ''}
+        ${element.extra?.rows?.map(row => html`
+          <div class="extra-row">
+            <span class="extra-row-label">${row.label}</span>
+            <span class="extra-row-value">${this.getEntityValue(row.value, false, true)}</span>
+          </div>
+        `)}
       </div>
     </div>
   `
@@ -314,6 +322,7 @@ export class PowerFlowLive extends LitElement {
       ${this._config.valueFontSize ? `--pfl-value-font-size: ${this._config.valueFontSize}px;` : ''}
       ${this._config.extraFontSize ? `--pfl-extra-font-size: ${this._config.extraFontSize}px;` : ''}
       ${this._config.sideExtraFontSize ? `--pfl-side-extra-font-size: ${this._config.sideExtraFontSize}px;` : ''}
+      ${this._config.extraRowFontSize ? `--pfl-extra-row-font-size: ${this._config.extraRowFontSize}px;` : ''}
       ${this._config.boxSize ? `--pfl-box-size: ${this._config.boxSize}px;` : ''}
       ${this._config.iconSize ? `--pfl-icon-size: ${this._config.iconSize}px;` : ''}
     `;
@@ -330,8 +339,8 @@ export class PowerFlowLive extends LitElement {
 
     const numTop = elementsByPosition.top.length;
     const numBottom = elementsByPosition.bottom.length;
-    const topRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); top: 0;`;
-    const bottomRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); bottom: 0;`;
+    const topRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); top: 0; z-index: 1;`;
+    const bottomRowStyle = `position: absolute; left: ${halfBox}px; width: calc(100% - ${boxSize}px); bottom: 0; z-index: 1;`;
 
     return html`
       <ha-card .header=${this._config.title} style="${cardStyle}">
@@ -426,6 +435,8 @@ export class PowerFlowLive extends LitElement {
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
+      z-index: 1;
     }
     .container-top, .container-bottom { padding: 0; }
     .container-left, .container-right { padding: 10px 0; }
@@ -437,6 +448,7 @@ export class PowerFlowLive extends LitElement {
       border-radius: 25%;
       border: 2px solid;
       overflow: hidden;
+      background: var(--card-background-color, var(--ha-card-background, #1c1c1c));
 
       display: flex;
       flex-direction: column;
@@ -488,6 +500,21 @@ export class PowerFlowLive extends LitElement {
     }
     .extra-main {
       font-size: var(--pfl-extra-font-size, 10px);
+    }
+    .extra-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0 10%;
+      box-sizing: border-box;
+      font-size: var(--pfl-extra-row-font-size, var(--pfl-extra-font-size, 10px));
+      line-height: 1.3;
+    }
+    .extra-row-label {
+      opacity: 0.7;
+    }
+    .extra-row-value {
+      text-align: right;
     }
     .side-extra {
       width: calc((100% - var(--pfl-icon-size, 24px)) / 2);

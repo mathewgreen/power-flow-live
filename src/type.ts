@@ -5,7 +5,8 @@ export type SystemElementDef = {
   extra?: string | {
     main?: string,
     left?: string,
-    right?: string
+    right?: string,
+    rows?: Array<{ label: string, value: string }>
   };
 }
 
@@ -15,6 +16,7 @@ export type ElementDef = SystemElementDef & {
     fromSystem?: string;
   };
   position: "top" | "left" | "bottom" | "right" | "middle";
+  type?: "standard" | "wide";
   fill?: string;
   invert?: boolean;
   exclude?: boolean;
@@ -25,7 +27,8 @@ export type CalculatedElementDef = ElementDef & {
   extra?: undefined | {
     main?: string,
     left?: string,
-    right?: string
+    right?: string,
+    rows?: Array<{ label: string, value: string }>
   },
   display?: string | number;
   calculations: {
