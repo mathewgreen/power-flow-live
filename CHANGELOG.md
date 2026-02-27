@@ -1,3 +1,10 @@
+## 1.1.0 (2026-02-27)
+
+* docs: Update README with v1.1.0 features ([ea8549e](https://github.com/mathewgreen/power-flow-live/commit/ea8549e))
+* feat: Add wide box type, extra rows, and display precision support ([e1e22ad](https://github.com/mathewgreen/power-flow-live/commit/e1e22ad))
+* Fix layout bugs: ([f23c65c](https://github.com/mathewgreen/power-flow-live/commit/f23c65c))
+* Fix layout for multiple top/bottom elements on narrow screens ([ba9915c](https://github.com/mathewgreen/power-flow-live/commit/ba9915c))
+
 ## 1.0.0 (2026-02-22)
 
 * feat: Update CI/CD workflows, release config, and documentation ([84841b1](https://github.com/mathewgreen/power-flow-live/commit/84841b1))
